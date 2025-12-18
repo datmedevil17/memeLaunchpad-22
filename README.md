@@ -34,6 +34,66 @@ This project is a Solana smart contract suite for launching meme tokens with aut
 - **BondingCurve:** Pricing and liquidity management for each token.
 - **Transaction:** Records of each buy/sell event.
 
+## Architecture Diagram
+
+```mermaid
+graph TD
+    %% Accounts
+    Signer((User/Signer))
+    ProgramState[ProgramState PDA]
+    TokenInfo[TokenInfo PDA]
+    BondingCurve[BondingCurve PDA]
+    Mint[Mint Account]
+    Transaction[Transaction PDA]
+    ATA[Associated Token Account]
+
+    %% Instructions
+    subgraph Instructions
+        Initialize[initialize]
+        CreateToken[create_token]
+        BuyToken[buy_token]
+        SellToken[sell_token]
+        LaunchToDex[launch_to_dex]
+        UpdateSettings[update_platform_settings]
+    end
+
+    %% Connections
+    Initialize -- init --> ProgramState
+    Initialize -- signer --> Signer
+
+    CreateToken -- mut --> ProgramState
+    CreateToken -- init --> TokenInfo
+    CreateToken -- init --> BondingCurve
+    CreateToken -- init --> Mint
+    CreateToken -- signer --> Signer
+
+    BuyToken -- read --> ProgramState
+    BuyToken -- mut --> TokenInfo
+    BuyToken -- mut --> BondingCurve
+    BuyToken -- init --> Transaction
+    BuyToken -- mint --> Mint
+    BuyToken -- mut --> ATA
+    BuyToken -- signer --> Signer
+
+    SellToken -- read --> ProgramState
+    SellToken -- mut --> TokenInfo
+    SellToken -- mut --> BondingCurve
+    SellToken -- init --> Transaction
+    SellToken -- burn --> Mint
+    SellToken -- mut --> ATA
+    SellToken -- signer --> Signer
+
+    LaunchToDex -- mut --> ProgramState
+    LaunchToDex -- mut --> TokenInfo
+    LaunchToDex -- mut --> BondingCurve
+    LaunchToDex -- init --> Transaction
+    LaunchToDex -- mut --> Mint
+    LaunchToDex -- signer --> Signer
+
+    UpdateSettings -- mut --> ProgramState
+    UpdateSettings -- signer --> Signer
+```
+
 ## Security
 - All critical operations are validated.
 - CPI calls are used for mint and token operations.
