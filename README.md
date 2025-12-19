@@ -38,61 +38,45 @@ This project is a Solana smart contract suite for launching meme tokens with aut
 
 ```mermaid
 graph TD
-    %% Accounts
-    Signer((User/Signer))
-    ProgramState[ProgramState PDA]
-    TokenInfo[TokenInfo PDA]
-    BondingCurve[BondingCurve PDA]
-    Mint[Mint Account]
-    Transaction[Transaction PDA]
-    ATA[Associated Token Account]
+    %% Roles
+    subgraph Roles
+        Admin((Admin))
+        Creator((Creator))
+        Trader((Trader))
+    end
 
-    %% Instructions
-    subgraph Instructions
-        Initialize[initialize]
-        CreateToken[create_token]
-        BuyToken[buy_token]
-        SellToken[sell_token]
-        LaunchToDex[launch_to_dex]
-        UpdateSettings[update_platform_settings]
+    %% Core Flow
+    subgraph "Platform Lifecycle"
+        Init[Initialize Platform]
+        Settings[Update Settings]
+        Withdraw[Withdraw Fees]
+    end
+
+    subgraph "Token Lifecycle"
+        Create[Create Token]
+        Trade[Buy / Sell Token]
+        Delete[Delete Token]
+        Launch[Launch to DEX]
     end
 
     %% Connections
-    Initialize -- init --> ProgramState
-    Initialize -- signer --> Signer
+    Admin -->|1. Setup| Init
+    Init --> Settings
+    Settings --> Init
+    Admin -->|Maintenance| Withdraw
 
-    CreateToken -- mut --> ProgramState
-    CreateToken -- init --> TokenInfo
-    CreateToken -- init --> BondingCurve
-    CreateToken -- init --> Mint
-    CreateToken -- signer --> Signer
+    Creator -->|2. Launch New Meme| Create
+    Create -->|Initial State| Trade
+    Trader -->|3. Speculate| Trade
 
-    BuyToken -- read --> ProgramState
-    BuyToken -- mut --> TokenInfo
-    BuyToken -- mut --> BondingCurve
-    BuyToken -- init --> Transaction
-    BuyToken -- mint --> Mint
-    BuyToken -- mut --> ATA
-    BuyToken -- signer --> Signer
-
-    SellToken -- read --> ProgramState
-    SellToken -- mut --> TokenInfo
-    SellToken -- mut --> BondingCurve
-    SellToken -- init --> Transaction
-    SellToken -- burn --> Mint
-    SellToken -- mut --> ATA
-    SellToken -- signer --> Signer
-
-    LaunchToDex -- mut --> ProgramState
-    LaunchToDex -- mut --> TokenInfo
-    LaunchToDex -- mut --> BondingCurve
-    LaunchToDex -- init --> Transaction
-    LaunchToDex -- mut --> Mint
-    LaunchToDex -- signer --> Signer
-
-    UpdateSettings -- mut --> ProgramState
-    UpdateSettings -- signer --> Signer
+    Trade -->|Liquidity Threshold Met| Launch
+    Create -->|No Activity| Delete
+    
+    %% State Transistions
+    Trade -- Bonding Curve --> Trade
+    Launch -- "Lock Liquidity" --> DEX[Raydium / External DEX]
 ```
+
 
 ## Security
 - All critical operations are validated.

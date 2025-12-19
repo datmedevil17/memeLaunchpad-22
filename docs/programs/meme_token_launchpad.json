@@ -1,0 +1,1344 @@
+{
+  "address": "5kFcUdsEqDFEnSoLK9JxLhdEuGfNmyu517FkrpBwDMen",
+  "metadata": {
+    "name": "meme_token_launchpad",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Created with Anchor"
+  },
+  "instructions": [
+    {
+      "name": "buy_token",
+      "discriminator": [
+        138,
+        127,
+        14,
+        91,
+        38,
+        87,
+        115,
+        105
+      ],
+      "accounts": [
+        {
+          "name": "program_state",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  103,
+                  114,
+                  97,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "token_info",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  111,
+                  107,
+                  101,
+                  110,
+                  95,
+                  105,
+                  110,
+                  102,
+                  111
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "token_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "bonding_curve",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  111,
+                  110,
+                  100,
+                  105,
+                  110,
+                  103,
+                  95,
+                  99,
+                  117,
+                  114,
+                  118,
+                  101
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "token_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "transaction",
+          "writable": true
+        },
+        {
+          "name": "mint",
+          "docs": [
+            "We validate this in the handler by comparing `mint.key().to_bytes()` == `token_info.mint.to_bytes()`",
+            "and by using it in the token_2022 CPI."
+          ],
+          "writable": true
+        },
+        {
+          "name": "buyer_token_account",
+          "docs": [
+            "- This account is unchecked by Anchor at compile-time.",
+            "- We **validate at runtime** in `buy_token()`:",
+            "1. derive expected ATA via `get_associated_token_address(&buyer.key(), &token_info.mint)` and compare addresses,",
+            "2. if missing, create the ATA via CPI to `associated_token::create(...)`,",
+            "3. check `owner == spl_token_2022::ID`,",
+            "4. unpack via `spl_token_2022::state::Account::unpack(...)` and verify `mint == token_info.mint` and `owner == buyer`."
+          ],
+          "writable": true
+        },
+        {
+          "name": "token_creator",
+          "docs": [
+            "Verified at runtime / via constraint with token_info.creator."
+          ],
+          "writable": true
+        },
+        {
+          "name": "buyer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "rent",
+          "docs": [
+            "Rent required when creating the associated token account via CPI."
+          ],
+          "address": "SysvarRent111111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "token_id",
+          "type": "u64"
+        },
+        {
+          "name": "sol_amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "create_token",
+      "discriminator": [
+        84,
+        52,
+        204,
+        228,
+        24,
+        140,
+        234,
+        75
+      ],
+      "accounts": [
+        {
+          "name": "program_state",
+          "writable": true
+        },
+        {
+          "name": "token_info",
+          "writable": true
+        },
+        {
+          "name": "bonding_curve",
+          "writable": true
+        },
+        {
+          "name": "mint",
+          "docs": [
+            "The new Mint (SPL Token-2022 compatible)"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  105,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "bonding_curve"
+              }
+            ]
+          }
+        },
+        {
+          "name": "creator",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "token_program",
+          "docs": [
+            "Token-2022 program"
+          ],
+          "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "symbol",
+          "type": "string"
+        },
+        {
+          "name": "uri",
+          "type": "string"
+        },
+        {
+          "name": "decimals",
+          "type": "u8"
+        },
+        {
+          "name": "initial_supply",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "initialize",
+      "discriminator": [
+        175,
+        175,
+        109,
+        31,
+        13,
+        152,
+        155,
+        237
+      ],
+      "accounts": [
+        {
+          "name": "program_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  103,
+                  114,
+                  97,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "deployer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "launch_to_dex",
+      "discriminator": [
+        195,
+        102,
+        177,
+        151,
+        21,
+        235,
+        134,
+        205
+      ],
+      "accounts": [
+        {
+          "name": "program_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  103,
+                  114,
+                  97,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "token_info",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  111,
+                  107,
+                  101,
+                  110,
+                  95,
+                  105,
+                  110,
+                  102,
+                  111
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "token_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "bonding_curve",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  111,
+                  110,
+                  100,
+                  105,
+                  110,
+                  103,
+                  95,
+                  99,
+                  117,
+                  114,
+                  118,
+                  101
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "token_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "transaction",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  114,
+                  97,
+                  110,
+                  115,
+                  97,
+                  99,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "launcher"
+              },
+              {
+                "kind": "arg",
+                "path": "token_id"
+              },
+              {
+                "kind": "arg",
+                "path": "next_tx_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint",
+          "writable": true
+        },
+        {
+          "name": "token_creator",
+          "writable": true
+        },
+        {
+          "name": "launcher",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "token_id",
+          "type": "u64"
+        },
+        {
+          "name": "liquidity_amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "sell_token",
+      "discriminator": [
+        109,
+        61,
+        40,
+        187,
+        230,
+        176,
+        135,
+        174
+      ],
+      "accounts": [
+        {
+          "name": "program_state",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  103,
+                  114,
+                  97,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "token_info",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  111,
+                  107,
+                  101,
+                  110,
+                  95,
+                  105,
+                  110,
+                  102,
+                  111
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "token_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "bonding_curve",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  111,
+                  110,
+                  100,
+                  105,
+                  110,
+                  103,
+                  95,
+                  99,
+                  117,
+                  114,
+                  118,
+                  101
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "token_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "transaction",
+          "writable": true
+        },
+        {
+          "name": "mint",
+          "writable": true
+        },
+        {
+          "name": "seller_token_account",
+          "writable": true
+        },
+        {
+          "name": "token_creator",
+          "writable": true
+        },
+        {
+          "name": "seller",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "token_id",
+          "type": "u64"
+        },
+        {
+          "name": "token_amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "update_platform_settings",
+      "discriminator": [
+        213,
+        238,
+        2,
+        39,
+        128,
+        157,
+        3,
+        95
+      ],
+      "accounts": [
+        {
+          "name": "program_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  103,
+                  114,
+                  97,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "new_fee_rate",
+          "type": "u64"
+        },
+        {
+          "name": "new_launch_threshold",
+          "type": "u64"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "BondingCurve",
+      "discriminator": [
+        23,
+        183,
+        248,
+        55,
+        96,
+        216,
+        172,
+        96
+      ]
+    },
+    {
+      "name": "ProgramState",
+      "discriminator": [
+        77,
+        209,
+        137,
+        229,
+        149,
+        67,
+        167,
+        230
+      ]
+    },
+    {
+      "name": "TokenInfo",
+      "discriminator": [
+        109,
+        162,
+        52,
+        125,
+        77,
+        166,
+        37,
+        202
+      ]
+    },
+    {
+      "name": "Transaction",
+      "discriminator": [
+        11,
+        24,
+        174,
+        129,
+        203,
+        117,
+        242,
+        23
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "AlreadyInitialized",
+      "msg": "Program already initialized"
+    },
+    {
+      "code": 6001,
+      "name": "TokenNameTooLong",
+      "msg": "Token name too long"
+    },
+    {
+      "code": 6002,
+      "name": "TokenSymbolTooLong",
+      "msg": "Token symbol too long"
+    },
+    {
+      "code": 6003,
+      "name": "TokenUriTooLong",
+      "msg": "Token URI too long"
+    },
+    {
+      "code": 6004,
+      "name": "InvalidDecimals",
+      "msg": "Invalid decimals value"
+    },
+    {
+      "code": 6005,
+      "name": "InvalidInitialSupply",
+      "msg": "Invalid initial supply"
+    },
+    {
+      "code": 6006,
+      "name": "TokenNotFound",
+      "msg": "Token not found"
+    },
+    {
+      "code": 6007,
+      "name": "TokenAlreadyLaunched",
+      "msg": "Token already launched to DEX"
+    },
+    {
+      "code": 6008,
+      "name": "InvalidPurchaseAmount",
+      "msg": "Invalid purchase amount"
+    },
+    {
+      "code": 6009,
+      "name": "PurchaseAmountTooSmall",
+      "msg": "Purchase amount too small"
+    },
+    {
+      "code": 6010,
+      "name": "PurchaseAmountTooLarge",
+      "msg": "Purchase amount too large"
+    },
+    {
+      "code": 6011,
+      "name": "InsufficientSolBalance",
+      "msg": "Insufficient SOL balance"
+    },
+    {
+      "code": 6012,
+      "name": "InsufficientTokenBalance",
+      "msg": "Insufficient token balance"
+    },
+    {
+      "code": 6013,
+      "name": "BondingCurveError",
+      "msg": "Bonding curve calculation error"
+    },
+    {
+      "code": 6014,
+      "name": "LaunchThresholdNotMet",
+      "msg": "Launch threshold not met"
+    },
+    {
+      "code": 6015,
+      "name": "LaunchCooldownActive",
+      "msg": "Launch cooldown period not elapsed"
+    },
+    {
+      "code": 6016,
+      "name": "Unauthorized",
+      "msg": "Unauthorized operation"
+    },
+    {
+      "code": 6017,
+      "name": "InvalidFeeRate",
+      "msg": "Invalid fee rate"
+    },
+    {
+      "code": 6018,
+      "name": "InvalidLaunchThreshold",
+      "msg": "Invalid launch threshold"
+    },
+    {
+      "code": 6019,
+      "name": "TradingNotActive",
+      "msg": "Trading not active"
+    },
+    {
+      "code": 6020,
+      "name": "SlippageExceeded",
+      "msg": "Slippage tolerance exceeded"
+    },
+    {
+      "code": 6021,
+      "name": "TokenCreationFailed",
+      "msg": "Token creation failed"
+    },
+    {
+      "code": 6022,
+      "name": "MintAuthorityTransferFailed",
+      "msg": "Mint authority transfer failed"
+    },
+    {
+      "code": 6023,
+      "name": "TokenAccountCreationFailed",
+      "msg": "Token account creation failed"
+    },
+    {
+      "code": 6024,
+      "name": "InvalidTokenProgram",
+      "msg": "Invalid token program"
+    },
+    {
+      "code": 6025,
+      "name": "ArithmeticOverflow",
+      "msg": "Arithmetic overflow"
+    },
+    {
+      "code": 6026,
+      "name": "ArithmeticUnderflow",
+      "msg": "Arithmetic underflow"
+    },
+    {
+      "code": 6027,
+      "name": "DivisionByZero",
+      "msg": "Division by zero"
+    },
+    {
+      "code": 6028,
+      "name": "InvalidAccount",
+      "msg": "Invalid account"
+    },
+    {
+      "code": 6029,
+      "name": "AccountNotMutable",
+      "msg": "Account not mutable"
+    },
+    {
+      "code": 6030,
+      "name": "InvalidSigner",
+      "msg": "Invalid signer"
+    },
+    {
+      "code": 6031,
+      "name": "TokenMetadataUpdateFailed",
+      "msg": "Token metadata update failed"
+    },
+    {
+      "code": 6032,
+      "name": "InsufficientReserves",
+      "msg": "Insufficient reserves"
+    },
+    {
+      "code": 6033,
+      "name": "BondingCurveInactive",
+      "msg": "Bonding curve inactive"
+    },
+    {
+      "code": 6034,
+      "name": "InvalidTransactionId",
+      "msg": "Invalid transaction ID"
+    },
+    {
+      "code": 6035,
+      "name": "InvalidCreator",
+      "msg": "Invalid creator"
+    },
+    {
+      "code": 6036,
+      "name": "InvalidTokenAccount",
+      "msg": "Invalid token account"
+    }
+  ],
+  "types": [
+    {
+      "name": "BondingCurve",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "token_id",
+            "docs": [
+              "Associated token ID"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "virtual_sol_reserves",
+            "docs": [
+              "Virtual SOL reserves for bonding curve calculation"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "virtual_token_reserves",
+            "docs": [
+              "Virtual token reserves for bonding curve calculation"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "real_sol_reserves",
+            "docs": [
+              "Real SOL reserves (actual SOL held)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "real_token_reserves",
+            "docs": [
+              "Real token reserves (actual tokens held)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "total_sol_volume",
+            "docs": [
+              "Total SOL volume traded"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "total_token_volume",
+            "docs": [
+              "Total token volume traded"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "current_price",
+            "docs": [
+              "Current token price in lamports per token"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "market_cap",
+            "docs": [
+              "Market cap in lamports"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "active",
+            "docs": [
+              "Whether the curve is active"
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "last_updated",
+            "docs": [
+              "Last update timestamp"
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "docs": [
+              "Bump seed for PDA"
+            ],
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ProgramState",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "initialized",
+            "docs": [
+              "Whether the program has been initialized"
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "token_count",
+            "docs": [
+              "Total number of tokens created"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "platform_fee_rate",
+            "docs": [
+              "Platform fee rate in basis points (250 = 2.5%)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "launch_threshold",
+            "docs": [
+              "Threshold amount to launch token to DEX (in lamports)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "platform_authority",
+            "docs": [
+              "Platform authority address"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "platform_treasury",
+            "docs": [
+              "Platform treasury address for collecting fees"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "total_fees_collected",
+            "docs": [
+              "Total platform fees collected"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "is_paused",
+            "docs": [
+              "Emergency pause flag"
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "initialized_at",
+            "docs": [
+              "Timestamp when the program was initialized"
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "docs": [
+              "Bump seed for PDA"
+            ],
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TokenInfo",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "token_id",
+            "docs": [
+              "Unique token ID"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "mint",
+            "docs": [
+              "Token mint address"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "creator",
+            "docs": [
+              "Token creator address"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "name",
+            "docs": [
+              "Token name"
+            ],
+            "type": "string"
+          },
+          {
+            "name": "symbol",
+            "docs": [
+              "Token symbol"
+            ],
+            "type": "string"
+          },
+          {
+            "name": "uri",
+            "docs": [
+              "Token metadata URI"
+            ],
+            "type": "string"
+          },
+          {
+            "name": "decimals",
+            "docs": [
+              "Token decimals"
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "total_supply",
+            "docs": [
+              "Total supply of the token"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "circulating_supply",
+            "docs": [
+              "Current circulating supply"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "launched_to_dex",
+            "docs": [
+              "Whether token has been launched to DEX"
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "launched_at",
+            "docs": [
+              "Launch timestamp"
+            ],
+            "type": {
+              "option": "i64"
+            }
+          },
+          {
+            "name": "total_sol_raised",
+            "docs": [
+              "Total SOL raised"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "holder_count",
+            "docs": [
+              "Number of unique holders"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "transaction_count",
+            "docs": [
+              "Number of transactions"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "created_at",
+            "docs": [
+              "Token creation timestamp"
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "trading_active",
+            "docs": [
+              "Whether trading is active"
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "creator_fees_collected",
+            "docs": [
+              "Creator fees collected"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "docs": [
+              "Bump seed for PDA"
+            ],
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Transaction",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "transaction_id",
+            "docs": [
+              "Transaction ID"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "token_id",
+            "docs": [
+              "Associated token ID"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "user",
+            "docs": [
+              "User who initiated the transaction"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "transaction_type",
+            "docs": [
+              "Transaction type"
+            ],
+            "type": {
+              "defined": {
+                "name": "TransactionType"
+              }
+            }
+          },
+          {
+            "name": "sol_amount",
+            "docs": [
+              "SOL amount involved"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "token_amount",
+            "docs": [
+              "Token amount involved"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "price",
+            "docs": [
+              "Price at the time of transaction"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "platform_fee",
+            "docs": [
+              "Platform fee charged"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "creator_fee",
+            "docs": [
+              "Creator fee charged (if applicable)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "docs": [
+              "Transaction timestamp"
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "signature",
+            "docs": [
+              "Transaction signature"
+            ],
+            "type": {
+              "array": [
+                "u8",
+                64
+              ]
+            }
+          },
+          {
+            "name": "bump",
+            "docs": [
+              "Bump seed for PDA"
+            ],
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TransactionType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Buy"
+          },
+          {
+            "name": "Sell"
+          },
+          {
+            "name": "Launch"
+          }
+        ]
+      }
+    }
+  ]
+}
