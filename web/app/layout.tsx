@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Play } from "next/font/google";
 import "./globals.css";
+import { MainNav } from "@/components/layout/main-nav";
+import AppWalletProvider from "@/components/AppWalletProvider";
+import { ReactQueryProvider } from "@/providers/provider";
+import "@solana/wallet-adapter-react-ui/styles.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,7 +17,7 @@ const geistMono = Geist_Mono({
 });
 
 const play = Play({
-  weight: "700",
+  weight: ["400", "700"],
   subsets: ["latin"],
   variable: "--font-play",
 });
@@ -33,7 +37,12 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${play.variable} antialiased`}
       >
-        {children}
+        <ReactQueryProvider>
+          <AppWalletProvider>
+            <MainNav />
+            {children}
+          </AppWalletProvider>
+        </ReactQueryProvider>
       </body>
     </html>
   );

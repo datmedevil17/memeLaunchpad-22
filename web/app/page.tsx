@@ -11,7 +11,7 @@ const content = [
   {
     title: "Meme Token Creation",
     description:
-      "Create new meme tokens instantly with custom name, symbol, and initial supply. Every token is launched with a bonding curve for fair price discovery.",
+      "Create new meme tokens instantly with custom name, symbol, and initial supply using Solana's Token-2022 standard. Every token is launched with a bonding curve for fair price discovery.",
     content: (
       <div className="h-full w-full bg-[linear-gradient(to_bottom_right,var(--cyan-500),var(--emerald-500))] flex items-center justify-center text-white text-2xl font-bold">
         Token Creation
@@ -73,6 +73,13 @@ export default function Home() {
         />
 
         <div className="relative z-10 flex flex-col items-center justify-center w-full px-4 text-center">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white/50 px-3 py-1 text-sm font-medium text-neutral-800 backdrop-blur-sm dark:border-neutral-800 dark:bg-neutral-900/50 dark:text-neutral-300">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+            </span>
+            Powered by Token-2022
+          </div>
           <h1 className="bg-opacity-50 bg-gradient-to-b from-neutral-500 to-neutral-900 dark:from-neutral-50 dark:to-neutral-400 bg-clip-text text-5xl font-bold text-transparent md:text-8xl">
             Meme Launchpad
           </h1>
