@@ -190,7 +190,8 @@ export const buyToken = async (
     mintPda,
     publicKey,
     false,
-    TOKEN_2022_PROGRAM_ID
+    TOKEN_2022_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID
   );
 
   const nextTxId = tokenInfo.transactionCount.add(new BN(1));

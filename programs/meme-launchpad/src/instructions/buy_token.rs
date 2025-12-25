@@ -1,20 +1,16 @@
+use crate::constants::*;
+use crate::errors::ErrorCode;
+use crate::states::{BondingCurve, ProgramState, TokenInfo, Transaction, TransactionType};
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::program_pack::Pack;
 use anchor_lang::system_program;
-use anchor_spl::token_2022::{self, MintTo, Token2022};
 use anchor_spl::associated_token::AssociatedToken;
-use crate::constants::*;
-use crate::errors::ErrorCode;
-use crate::states::{ProgramState, TokenInfo, BondingCurve, Transaction, TransactionType};
-use spl_associated_token_account::get_associated_token_address;
-use spl_token_2022::state::Account as SplToken2022Account;
 use anchor_spl::associated_token::Create;
+use anchor_spl::token_2022::{self, MintTo, Token2022};
+use spl_associated_token_account::get_associated_token_address_with_program_id;
+use spl_token_2022::state::Account as SplToken2022Account;
 
-pub fn buy_token(
-    ctx: Context<BuyTokenCtx>,
-    token_id: u64,
-    sol_amount: u64,
-) -> Result<()> {
+pub fn buy_token(ctx: Context<BuyTokenCtx>, token_id: u64, sol_amount: u64) -> Result<()> {
     let program_state = &ctx.accounts.program_state;
     let token_info = &mut ctx.accounts.token_info;
     let bonding_curve = &mut ctx.accounts.bonding_curve;
@@ -120,15 +116,9 @@ pub fn buy_token(
         )?;
     }
 
-
-
     // Mint tokens to buyer (bonding_curve PDA is signer)
     let binding = token_id.to_le_bytes();
-    let bonding_curve_seeds = &[
-        BONDING_CURVE_SEED,
-        binding.as_ref(),
-        &[bonding_curve.bump],
-    ];
+    let bonding_curve_seeds = &[BONDING_CURVE_SEED, binding.as_ref(), &[bonding_curve.bump]];
     let signer_seeds = &[&bonding_curve_seeds[..]];
 
     let mint_accounts = MintTo {
@@ -142,7 +132,12 @@ pub fn buy_token(
         mint_accounts,
         signer_seeds,
     );
-     let expected_ata = get_associated_token_address(&buyer.key(), &token_info.mint);
+
+    let expected_ata = get_associated_token_address_with_program_id(
+        &buyer.key(),
+        &token_info.mint,
+        &spl_token_2022::ID,
+    );
 
     // Ensure the passed account is the expected ATA (compare &Pubkey to Pubkey via &expected_ata)
     if ctx.accounts.buyer_token_account.key() != expected_ata {
@@ -160,7 +155,10 @@ pub fn buy_token(
             system_program: ctx.accounts.system_program.to_account_info(),
             token_program: ctx.accounts.token_program.to_account_info(),
         };
-        let cpi_ctx = CpiContext::new(ctx.accounts.associated_token_program.to_account_info(), cpi_accounts);
+        let cpi_ctx = CpiContext::new(
+            ctx.accounts.associated_token_program.to_account_info(),
+            cpi_accounts,
+        );
         anchor_spl::associated_token::create(cpi_ctx)?; // creates the ATA
     }
 
@@ -183,23 +181,28 @@ pub fn buy_token(
 
     // Update bonding curve reserves
     bonding_curve.update_reserves_buy(net_sol_amount, token_output)?;
-    bonding_curve.total_sol_volume = bonding_curve.total_sol_volume
+    bonding_curve.total_sol_volume = bonding_curve
+        .total_sol_volume
         .checked_add(sol_amount)
         .ok_or(ErrorCode::ArithmeticOverflow)?;
-    bonding_curve.total_token_volume = bonding_curve.total_token_volume
+    bonding_curve.total_token_volume = bonding_curve
+        .total_token_volume
         .checked_add(token_output)
         .ok_or(ErrorCode::ArithmeticOverflow)?;
     bonding_curve.last_updated = Clock::get()?.unix_timestamp;
 
     // Update token info
-    token_info.circulating_supply = token_info.circulating_supply
+    token_info.circulating_supply = token_info
+        .circulating_supply
         .checked_add(token_output)
         .ok_or(ErrorCode::ArithmeticOverflow)?;
-    token_info.total_sol_raised = token_info.total_sol_raised
+    token_info.total_sol_raised = token_info
+        .total_sol_raised
         .checked_add(sol_amount)
         .ok_or(ErrorCode::ArithmeticOverflow)?;
     token_info.transaction_count += 1;
-    token_info.creator_fees_collected = token_info.creator_fees_collected
+    token_info.creator_fees_collected = token_info
+        .creator_fees_collected
         .checked_add(creator_fee)
         .ok_or(ErrorCode::ArithmeticOverflow)?;
 
@@ -235,6 +238,7 @@ pub fn buy_token(
 #[instruction(token_id: u64, sol_amount: u64)]
 pub struct BuyTokenCtx<'info> {
     #[account(
+        mut,
         seeds = [PROGRAM_STATE_SEED],
         bump = program_state.bump
     )]
