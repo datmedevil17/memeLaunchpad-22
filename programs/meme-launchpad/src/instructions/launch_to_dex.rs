@@ -1,16 +1,12 @@
-use anchor_lang::prelude::*;
-use anchor_spl::token_2022::{self, SetAuthority, Token2022};
-use anchor_spl::token_2022::spl_token_2022::instruction::AuthorityType;
-use anchor_lang::solana_program::{program::invoke_signed, system_instruction};
 use crate::constants::*;
 use crate::errors::ErrorCode;
-use crate::states::{ProgramState, TokenInfo, BondingCurve, Transaction, TransactionType};
+use crate::states::{BondingCurve, ProgramState, TokenInfo, Transaction, TransactionType};
+use anchor_lang::prelude::*;
+// use anchor_lang::solana_program::{program::invoke_signed, system_instruction};
+use anchor_spl::token_2022::spl_token_2022::instruction::AuthorityType;
+use anchor_spl::token_2022::{self, SetAuthority, Token2022};
 
-pub fn launch_to_dex(
-    ctx: Context<LaunchToDexCtx>,
-    token_id: u64,
-    next_tx_id: u64,
-) -> Result<()> {
+pub fn launch_to_dex(ctx: Context<LaunchToDexCtx>, token_id: u64, next_tx_id: u64) -> Result<()> {
     let program_state = &mut ctx.accounts.program_state;
     let token_info = &mut ctx.accounts.token_info;
     let bonding_curve = &mut ctx.accounts.bonding_curve;
@@ -41,7 +37,12 @@ pub fn launch_to_dex(
     }
 
     // Ensure next_tx_id is correct and then advance the counter
-    if next_tx_id != token_info.transaction_count.checked_add(1).ok_or(ErrorCode::ArithmeticOverflow)? {
+    if next_tx_id
+        != token_info
+            .transaction_count
+            .checked_add(1)
+            .ok_or(ErrorCode::ArithmeticOverflow)?
+    {
         return Err(ErrorCode::ArithmeticOverflow.into());
     }
 
@@ -87,39 +88,34 @@ pub fn launch_to_dex(
 
     // Perform lamport transfers using system_instruction + invoke_signed
     // Transfer liquidity SOL to creator (from bonding_curve PDA)
-    let ix_liquidity = system_instruction::transfer(
-        &bonding_curve.key(),
-        &ctx.accounts.token_creator.key(),
-        sol_for_liquidity,
-    );
-
-    invoke_signed(
-        &ix_liquidity,
-        &[
-            bonding_curve.to_account_info(),
-            ctx.accounts.token_creator.to_account_info(),
-            ctx.accounts.system_program.to_account_info(),
-        ],
-        signer_seeds,
-    )?;
+    **bonding_curve.to_account_info().try_borrow_mut_lamports()? = bonding_curve
+        .to_account_info()
+        .lamports()
+        .checked_sub(sol_for_liquidity)
+        .ok_or(ErrorCode::ArithmeticUnderflow)?;
+    **ctx
+        .accounts
+        .token_creator
+        .to_account_info()
+        .try_borrow_mut_lamports()? = ctx
+        .accounts
+        .token_creator
+        .to_account_info()
+        .lamports()
+        .checked_add(sol_for_liquidity)
+        .ok_or(ErrorCode::ArithmeticOverflow)?;
 
     // Transfer platform fee to program_state (from bonding_curve PDA)
-    let program_state_key = program_state.key();
-    let ix_fee = system_instruction::transfer(
-        &bonding_curve.key(),
-        &program_state_key,
-        platform_launch_fee,
-    );
-
-    invoke_signed(
-        &ix_fee,
-        &[
-            bonding_curve.to_account_info(),
-            program_state.to_account_info(),
-            ctx.accounts.system_program.to_account_info(),
-        ],
-        signer_seeds,
-    )?;
+    **bonding_curve.to_account_info().try_borrow_mut_lamports()? = bonding_curve
+        .to_account_info()
+        .lamports()
+        .checked_sub(platform_launch_fee)
+        .ok_or(ErrorCode::ArithmeticUnderflow)?;
+    **program_state.to_account_info().try_borrow_mut_lamports()? = program_state
+        .to_account_info()
+        .lamports()
+        .checked_add(platform_launch_fee)
+        .ok_or(ErrorCode::ArithmeticOverflow)?;
 
     // Update token info
     token_info.launched_to_dex = true;
@@ -155,7 +151,10 @@ pub fn launch_to_dex(
     msg!("Token ID: {}", token_id);
     msg!("SOL for liquidity: {}", sol_for_liquidity);
     msg!("Platform launch fee: {}", platform_launch_fee);
-    msg!("Mint authority transferred to creator: {}", token_info.creator);
+    msg!(
+        "Mint authority transferred to creator: {}",
+        token_info.creator
+    );
 
     Ok(())
 }
@@ -169,21 +168,21 @@ pub struct LaunchToDexCtx<'info> {
         bump = program_state.bump
     )]
     pub program_state: Account<'info, ProgramState>,
-    
+
     #[account(
         mut,
         seeds = [TOKEN_INFO_SEED, token_id.to_le_bytes().as_ref()],
         bump = token_info.bump
     )]
     pub token_info: Account<'info, TokenInfo>,
-    
+
     #[account(
         mut,
         seeds = [BONDING_CURVE_SEED, token_id.to_le_bytes().as_ref()],
         bump = bonding_curve.bump
     )]
     pub bonding_curve: Account<'info, BondingCurve>,
-    
+
     #[account(
         init,
         payer = launcher,
@@ -197,21 +196,21 @@ pub struct LaunchToDexCtx<'info> {
         bump
     )]
     pub transaction: Account<'info, Transaction>,
-    
+
     /// CHECK: Mint account that will be verified through CPI calls
     #[account(mut)]
     pub mint: AccountInfo<'info>,
-    
+
     /// CHECK: Token creator address for receiving liquidity SOL
     #[account(
         mut,
         address = token_info.creator
     )]
     pub token_creator: AccountInfo<'info>,
-    
+
     #[account(mut)]
     pub launcher: Signer<'info>,
-    
+
     pub token_program: Program<'info, Token2022>,
     pub system_program: Program<'info, System>,
 }

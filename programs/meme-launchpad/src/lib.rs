@@ -9,10 +9,10 @@ pub mod states;
 
 use instructions::*;
 
-declare_id!("4pwP8YpbD3yK6K9nDQjxFyZPW8ebTmmf6x2bvcbLNjvz");
+declare_id!("1214DaTekpyfKpvrQXTcAJFEpLBB3YGofGHBcHEXPz87");
 
 #[program]
-pub mod meme_token_launchpad {
+pub mod meme_launchpad {
     use super::*;
 
     pub fn initialize(ctx: Context<InitializeCtx>) -> Result<()> {
@@ -30,19 +30,11 @@ pub mod meme_token_launchpad {
         instructions::create_token(ctx, name, symbol, uri, decimals, initial_supply)
     }
 
-    pub fn buy_token(
-        ctx: Context<BuyTokenCtx>,
-        token_id: u64,
-        sol_amount: u64,
-    ) -> Result<()> {
+    pub fn buy_token(ctx: Context<BuyTokenCtx>, token_id: u64, sol_amount: u64) -> Result<()> {
         instructions::buy_token(ctx, token_id, sol_amount)
     }
 
-    pub fn sell_token(
-        ctx: Context<SellTokenCtx>,
-        token_id: u64,
-        token_amount: u64,
-    ) -> Result<()> {
+    pub fn sell_token(ctx: Context<SellTokenCtx>, token_id: u64, token_amount: u64) -> Result<()> {
         instructions::sell_token(ctx, token_id, token_amount)
     }
 

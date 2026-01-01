@@ -6,7 +6,7 @@ resolution = true
 skip-lint = false
 
 [programs.devnet]
-meme_launchpad = "4pwP8YpbD3yK6K9nDQjxFyZPW8ebTmmf6x2bvcbLNjvz"
+meme_launchpad = "1214DaTekpyfKpvrQXTcAJFEpLBB3YGofGHBcHEXPz87"
 
 [registry]
 url = "https://api.apr.dev"

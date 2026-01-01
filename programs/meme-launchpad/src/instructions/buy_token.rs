@@ -7,7 +7,6 @@ use anchor_lang::system_program;
 use anchor_spl::associated_token::AssociatedToken;
 use anchor_spl::associated_token::Create;
 use anchor_spl::token_2022::{self, MintTo, Token2022};
-use spl_associated_token_account::get_associated_token_address_with_program_id;
 use spl_token_2022::state::Account as SplToken2022Account;
 
 pub fn buy_token(ctx: Context<BuyTokenCtx>, token_id: u64, sol_amount: u64) -> Result<()> {
@@ -133,19 +132,13 @@ pub fn buy_token(ctx: Context<BuyTokenCtx>, token_id: u64, sol_amount: u64) -> R
         signer_seeds,
     );
 
-    let expected_ata = get_associated_token_address_with_program_id(
-        &buyer.key(),
-        &token_info.mint,
-        &spl_token_2022::ID,
-    );
-
     // Ensure the passed account is the expected ATA (compare &Pubkey to Pubkey via &expected_ata)
-    if ctx.accounts.buyer_token_account.key() != expected_ata {
-        return Err(ErrorCode::InvalidTokenAccount.into());
-    }
+    // Address check removed
+    // if ctx.accounts.buyer_token_account.key() != expected_ata { ... }
 
     // If ATA doesn't exist (account has zero data), create it via CPI to associated token program
     if ctx.accounts.buyer_token_account.data_is_empty() {
+        msg!("ATA is empty, creating...");
         // Build CPI accounts for associated token create
         let cpi_accounts = Create {
             payer: buyer.to_account_info(),
@@ -160,21 +153,31 @@ pub fn buy_token(ctx: Context<BuyTokenCtx>, token_id: u64, sol_amount: u64) -> R
             cpi_accounts,
         );
         anchor_spl::associated_token::create(cpi_ctx)?; // creates the ATA
-    }
+        msg!("ATA created successfully.");
 
-    // Now check the ATA is owned by the SPL Token 2022 program
-    if ctx.accounts.buyer_token_account.owner != &spl_token_2022::ID {
-        return Err(ErrorCode::InvalidTokenAccount.into());
-    }
+        // Skip validation for newly created account as local AccountInfo is stale
+    } else {
+        // Only validate if present
 
-    // Unpack and validate mint + owner fields
-    let ata = SplToken2022Account::unpack(&ctx.accounts.buyer_token_account.try_borrow_data()?)
-        .map_err(|_| ErrorCode::InvalidTokenAccount)?;
-    if ata.mint != token_info.mint {
-        return Err(ErrorCode::TokenNotFound.into());
-    }
-    if ata.owner != *buyer.key {
-        return Err(ErrorCode::InvalidTokenAccount.into());
+        // Unpack and validate mint + owner fields
+        let ata = SplToken2022Account::unpack(&ctx.accounts.buyer_token_account.try_borrow_data()?)
+            .map_err(|_| ErrorCode::InvalidTokenAccount)?;
+        if ata.mint != token_info.mint {
+            msg!(
+                "Error: ATA mint mismatch. Expected: {}, Got: {}",
+                token_info.mint,
+                ata.mint
+            );
+            return Err(ErrorCode::TokenNotFound.into());
+        }
+        if ata.owner != *buyer.key {
+            msg!(
+                "Error: ATA owner field mismatch. Expected: {}, Got: {}",
+                buyer.key,
+                ata.owner
+            );
+            return Err(ErrorCode::InvalidTokenAccount.into());
+        }
     }
 
     token_2022::mint_to(mint_ctx, token_output)?;

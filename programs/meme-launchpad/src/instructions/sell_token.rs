@@ -1,16 +1,12 @@
-use anchor_lang::prelude::*;
-use anchor_spl::token_2022::{self, Burn, Token2022};
-use anchor_spl::associated_token::AssociatedToken;
-use anchor_lang::system_program;
 use crate::constants::*;
 use crate::errors::ErrorCode;
-use crate::states::{ProgramState, TokenInfo, BondingCurve, Transaction, TransactionType};
+use crate::states::{BondingCurve, ProgramState, TokenInfo, Transaction, TransactionType};
+use anchor_lang::prelude::*;
+// use anchor_lang::system_program;
+use anchor_spl::associated_token::AssociatedToken;
+use anchor_spl::token_2022::{self, Burn, Token2022};
 
-pub fn sell_token(
-    ctx: Context<SellTokenCtx>,
-    token_id: u64,
-    token_amount: u64,
-) -> Result<()> {
+pub fn sell_token(ctx: Context<SellTokenCtx>, token_id: u64, token_amount: u64) -> Result<()> {
     let program_state = &ctx.accounts.program_state;
     let token_info = &mut ctx.accounts.token_info;
     let bonding_curve = &mut ctx.accounts.bonding_curve;
@@ -43,8 +39,6 @@ pub fn sell_token(
         return Err(ErrorCode::InsufficientReserves.into());
     }
 
-   
-
     // Calculate fees (same as you had)
     let platform_fee = sol_output
         .checked_mul(program_state.platform_fee_rate)
@@ -71,81 +65,88 @@ pub fn sell_token(
         authority: ctx.accounts.seller.to_account_info(),
     };
 
-    let burn_ctx = CpiContext::new(
-        ctx.accounts.token_program.to_account_info(),
-        burn_accounts,
-    );
+    let burn_ctx = CpiContext::new(ctx.accounts.token_program.to_account_info(), burn_accounts);
 
     token_2022::burn(burn_ctx, token_amount)?;
 
     // --- rest of your SOL transfers and updates (unchanged) ---
-    let binding = token_id.to_le_bytes();
-    let bonding_curve_seeds = &[
-        BONDING_CURVE_SEED,
-        binding.as_ref(),
-        &[bonding_curve.bump],
-    ];
-    let signer_seeds = &[&bonding_curve_seeds[..]];
+    // Transfer SOL from bonding curve to seller, fees, etc. directly via lamport modification
+    // (Since bonding_curve is a PDA owned by this program, we can't use system_program::transfer FROM it)
 
-    let transfer_accounts = system_program::Transfer {
-        from: bonding_curve.to_account_info(),
-        to: ctx.accounts.seller.to_account_info(),
-    };
-
-    system_program::transfer(
-        CpiContext::new_with_signer(
-            ctx.accounts.system_program.to_account_info(),
-            transfer_accounts,
-            signer_seeds,
-        ),
-        net_sol_output,
-    )?;
+    **bonding_curve.to_account_info().try_borrow_mut_lamports()? = bonding_curve
+        .to_account_info()
+        .lamports()
+        .checked_sub(net_sol_output)
+        .ok_or(ErrorCode::ArithmeticUnderflow)?;
+    **ctx
+        .accounts
+        .seller
+        .to_account_info()
+        .try_borrow_mut_lamports()? = ctx
+        .accounts
+        .seller
+        .to_account_info()
+        .lamports()
+        .checked_add(net_sol_output)
+        .ok_or(ErrorCode::ArithmeticOverflow)?;
 
     if platform_fee > 0 {
-        let platform_fee_accounts = system_program::Transfer {
-            from: bonding_curve.to_account_info(),
-            to: ctx.accounts.program_state.to_account_info(),
-        };
-        system_program::transfer(
-            CpiContext::new_with_signer(
-                ctx.accounts.system_program.to_account_info(),
-                platform_fee_accounts,
-                signer_seeds,
-            ),
-            platform_fee,
-        )?;
+        **bonding_curve.to_account_info().try_borrow_mut_lamports()? = bonding_curve
+            .to_account_info()
+            .lamports()
+            .checked_sub(platform_fee)
+            .ok_or(ErrorCode::ArithmeticUnderflow)?;
+        **ctx
+            .accounts
+            .program_state
+            .to_account_info()
+            .try_borrow_mut_lamports()? = ctx
+            .accounts
+            .program_state
+            .to_account_info()
+            .lamports()
+            .checked_add(platform_fee)
+            .ok_or(ErrorCode::ArithmeticOverflow)?;
     }
 
     if creator_fee > 0 {
-        let creator_fee_accounts = system_program::Transfer {
-            from: bonding_curve.to_account_info(),
-            to: ctx.accounts.token_creator.to_account_info(),
-        };
-        system_program::transfer(
-            CpiContext::new_with_signer(
-                ctx.accounts.system_program.to_account_info(),
-                creator_fee_accounts,
-                signer_seeds,
-            ),
-            creator_fee,
-        )?;
+        **bonding_curve.to_account_info().try_borrow_mut_lamports()? = bonding_curve
+            .to_account_info()
+            .lamports()
+            .checked_sub(creator_fee)
+            .ok_or(ErrorCode::ArithmeticUnderflow)?;
+        **ctx
+            .accounts
+            .token_creator
+            .to_account_info()
+            .try_borrow_mut_lamports()? = ctx
+            .accounts
+            .token_creator
+            .to_account_info()
+            .lamports()
+            .checked_add(creator_fee)
+            .ok_or(ErrorCode::ArithmeticOverflow)?;
     }
 
     // Update bonding curve reserves and token_info (unchanged)
     bonding_curve.update_reserves_sell(token_amount, sol_output)?;
-    bonding_curve.total_sol_volume = bonding_curve.total_sol_volume
+    bonding_curve.total_sol_volume = bonding_curve
+        .total_sol_volume
         .checked_add(sol_output)
         .ok_or(ErrorCode::ArithmeticOverflow)?;
-    bonding_curve.total_token_volume = bonding_curve.total_token_volume
+    bonding_curve.total_token_volume = bonding_curve
+        .total_token_volume
         .checked_add(token_amount)
         .ok_or(ErrorCode::ArithmeticOverflow)?;
     bonding_curve.last_updated = Clock::get()?.unix_timestamp;
 
-    token_info.circulating_supply = token_info.circulating_supply
+    token_info.circulating_supply = token_info
+        .circulating_supply
         .checked_sub(token_amount)
         .ok_or(ErrorCode::ArithmeticUnderflow)?;
     token_info.transaction_count += 1;
-    token_info.creator_fees_collected = token_info.creator_fees_collected
+    token_info.creator_fees_collected = token_info
+        .creator_fees_collected
         .checked_add(creator_fee)
         .ok_or(ErrorCode::ArithmeticOverflow)?;
 
