@@ -9,7 +9,7 @@ pub mod states;
 
 use instructions::*;
 
-declare_id!("1214DaTekpyfKpvrQXTcAJFEpLBB3YGofGHBcHEXPz87");
+declare_id!("aDkpBt58QzTwsFcThnKLfsb82WPDZrZmA5ERRdBu3ho");
 
 #[program]
 pub mod meme_launchpad {

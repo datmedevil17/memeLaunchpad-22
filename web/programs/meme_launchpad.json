@@ -1,7 +1,7 @@
 {
-  "address": "5kFcUdsEqDFEnSoLK9JxLhdEuGfNmyu517FkrpBwDMen",
+  "address": "aDkpBt58QzTwsFcThnKLfsb82WPDZrZmA5ERRdBu3ho",
   "metadata": {
-    "name": "meme_token_launchpad",
+    "name": "meme_launchpad",
     "version": "0.1.0",
     "spec": "0.1.0",
     "description": "Created with Anchor"
@@ -22,6 +22,7 @@
       "accounts": [
         {
           "name": "program_state",
+          "writable": true,
           "pda": {
             "seeds": [
               {
